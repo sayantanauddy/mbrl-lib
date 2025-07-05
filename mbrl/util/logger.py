@@ -10,6 +10,8 @@ from typing import Counter, Dict, List, Mapping, Tuple, Union
 import termcolor
 import torch
 
+import wandb
+
 LogFormatType = List[Tuple[str, str, str]]
 LogTypes = Union[int, float, torch.Tensor]
 
@@ -219,3 +221,36 @@ class Logger(object):
         for group_name in ["train", "eval"]:
             meter_group, _, color = self._groups[group_name]
             meter_group.dump(step, group_name, save, color=color)
+
+class WandbLogger:
+    def __init__(self, project, run_name=None, config=None):
+        """
+        Initialize wandb run and optionally log a config dict.
+
+        Args:
+            project (str): wandb project name.
+            run_name (str, optional): run name.
+            config (dict, optional): config/hyperparameters to log.
+        """
+        self.run = wandb.init(project=project, name=run_name)
+        if config is not None:
+            wandb.config.update(config)
+
+    def log_metrics(self, metrics_dict, step=None):
+        """Log metrics dict at optional step."""
+        if step is not None:
+            wandb.log(metrics_dict, step=step)
+        else:
+            wandb.log(metrics_dict)
+
+    def log_config(self, config):
+        """Update config after init (if needed)."""
+        wandb.config.update(config)
+
+    def info(self, message):
+        """Print or log informational message."""
+        print("[INFO]", message)
+
+    def finish(self):
+        """Finish the wandb run."""
+        wandb.finish()

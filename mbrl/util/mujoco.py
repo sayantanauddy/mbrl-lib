@@ -77,7 +77,7 @@ class MujocoEnvHandler(EnvHandler):
     def make_env_from_str(env_name: str) -> gym.Env:
         # Handle standard MuJoCo envs
         if "gym___" in env_name:
-            env = gym.make(env_name.split("___")[1])
+            env = gym.make(env_name.split("___")[1], render_mode="rgb_array")
         # Handle custom MuJoco envs in mbrl-lib
         else:
             if env_name == "cartpole_continuous":

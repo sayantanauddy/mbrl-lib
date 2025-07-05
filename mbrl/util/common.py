@@ -400,6 +400,7 @@ def train_model_and_save_model_and_data(
     )
     if hasattr(model, "update_normalizer"):
         model.update_normalizer(replay_buffer.get_all())
+        
     model_trainer.train(
         dataset_train,
         dataset_val=dataset_val,

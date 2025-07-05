@@ -12,7 +12,7 @@ import torch
 import tqdm
 from torch import optim as optim
 
-from mbrl.util.logger import Logger
+from mbrl.util.logger import Logger, WandbLogger
 from mbrl.util.replay_buffer import BootstrapIterator, TransitionIterator
 
 from .model import Model
@@ -36,6 +36,7 @@ class ModelTrainer:
         optim_lr (float): the learning rate for the optimizer (using Adam).
         weight_decay (float): the weight decay to use.
         logger (:class:`mbrl.util.Logger`, optional): the logger to use.
+        wandb_logger: wandb logging class. defaults to None
     """
 
     _LOG_GROUP_NAME = "model_train"
@@ -47,9 +48,11 @@ class ModelTrainer:
         weight_decay: float = 1e-5,
         optim_eps: float = 1e-8,
         logger: Optional[Logger] = None,
+        wandb_logger: Optional[WandbLogger] = None,
     ):
         self.model = model
         self._train_iteration = 0
+        self._train_epochs = 0
 
         self.logger = logger
         if self.logger:
@@ -59,6 +62,8 @@ class ModelTrainer:
                 color="blue",
                 dump_frequency=1,
             )
+
+        self.wandb_logger = wandb_logger
 
         self.optimizer = optim.Adam(
             self.model.parameters(),
@@ -183,16 +188,31 @@ class ModelTrainer:
                         "iteration": self._train_iteration,
                         "epoch": epoch,
                         "train_dataset_size": dataset_train.num_stored,
-                        "val_dataset_size": dataset_val.num_stored
-                        if dataset_val is not None
-                        else 0,
+                        "val_dataset_size": dataset_val.num_stored if dataset_val is not None else 0,
                         "model_loss": total_avg_loss,
                         "model_val_score": model_val_score,
-                        "model_best_val_score": best_val_score.mean()
-                        if best_val_score is not None
-                        else 0,
+                        "model_best_val_score": best_val_score.mean() if best_val_score is not None else 0,
                     },
                 )
+
+            if self.wandb_logger:
+
+
+                # Log to wandb, use namespace `model_train`
+                self.wandb_logger.run.define_metric("model_train/*", step_metric="model_train/all_epochs")
+                self.wandb_logger.log_metrics(
+                    metrics_dict = {
+                        "model_train/all_epochs": self._train_epochs,
+                        "model_train/iteration": self._train_iteration, # Counts the number of model trainings
+                        "model_train/epoch": epoch,
+                        "model_train/train_dataset_size": dataset_train.num_stored,
+                        "model_train/val_dataset_size": dataset_val.num_stored if dataset_val is not None else 0,
+                        "model_train/model_loss": total_avg_loss,
+                        "model_train/model_val_score": model_val_score,
+                        "model_train/model_best_val_score": best_val_score.mean() if best_val_score is not None else 0,
+                    },
+                )
+
             if callback:
                 callback(
                     self.model,
@@ -206,11 +226,14 @@ class ModelTrainer:
             if patience and epochs_since_update >= patience:
                 break
 
+            self._train_epochs += 1
+
         # saving the best models:
         if evaluate:
             self._maybe_set_best_weights_and_elite(best_weights, best_val_score)
 
         self._train_iteration += 1
+        
         return training_losses, val_scores
 
     def evaluate(

@@ -63,7 +63,7 @@ def _legacy_make_env(
         env = gym.make("GymV26Environment-v0", env=env)
         term_fn, reward_fn = _get_term_and_reward_fn(cfg)
     elif "gym___" in cfg.overrides.env:
-        env = gym.make(cfg.overrides.env.split("___")[1])
+        env = gym.make(cfg.overrides.env.split("___")[1], render_mode="rgb_array")
         term_fn, reward_fn = _get_term_and_reward_fn(cfg)
     else:
         import mbrl.env.mujoco_envs

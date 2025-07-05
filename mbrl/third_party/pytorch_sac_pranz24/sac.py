@@ -74,8 +74,15 @@ class SAC(object):
         return action.detach().cpu().numpy()[0]
 
     def update_parameters(
-        self, memory, batch_size, updates, logger=None, reverse_mask=False
-    ):
+        self, 
+        memory, 
+        batch_size, 
+        updates, 
+        logger=None, 
+        reverse_mask=False, 
+        wandb_logger=None
+        ):
+
         # Sample a batch from memory and ignore truncateds
         (
             state_batch,
@@ -163,6 +170,22 @@ class SAC(object):
             logger.log("train_actor/entropy", -log_pi.mean(), updates)
             logger.log("train_alpha/loss", alpha_loss, updates)
             logger.log("train_alpha/value", self.alpha, updates)
+
+        if wandb_logger is not None:
+            # Log the same things to wandb
+            wandb_logger.run.define_metric("policy_train/*", step_metric="policy_train/updates")
+            wandb_logger.log_metrics(
+                    metrics_dict = {
+                        "policy_train/updates": updates,
+                        "policy_train/batch_reward": reward_batch.mean(),
+                        "policy_train/critic_loss": qf_loss,
+                        "policy_train/actor_loss": policy_loss,
+                        "policy_train/actor_target_entropy": self.target_entropy if self.automatic_entropy_tuning else 0,
+                        "policy_train/actor_entropy": -log_pi.mean(),
+                        "policy_train/alpha_loss": alpha_loss,
+                        "policy_train/alpha_value": self.alpha,
+                    },
+            )
 
         return (
             qf1_loss.item(),
