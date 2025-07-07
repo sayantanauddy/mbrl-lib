@@ -1,12 +1,14 @@
 omegaconf>=2.0,<2.1
 hydra-core==1.0.3
-termcolor>=1.1.0
-tensorboard>=2.4.0
-imageio>=2.9.0
-numpy>=1.19.1
-matplotlib>=3.3.1
-gymnasium==0.26.3
-jupyter>=1.0.0
-pytest>=6.0.1
+termcolor>=3.1.0
+tensorboard>=2.19.0
+imageio[ffmpeg, pyav]>=2.37.0
+numpy>=2.2.6
+matplotlib>=3.10.3
+gymnasium==1.2.0
+jupyter>=1.1.1
+pytest>=8.4.1
 sk-video>=1.1.10
-tqdm>=4.48.2
+tqdm>=4.67.1
+wandb>=0.21.0
+mujoco>=3.3.3
